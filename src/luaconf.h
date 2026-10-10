@@ -331,6 +331,14 @@
 #define LUA_COMPAT_MOD
 
 /*
+@@ LUA_COMPAT_TFORTABLE controls compatibility with the Lua 5.0 generic
+@* 'for' over a table ('for k, v in t do'), which traverses t like
+@* 'pairs(t)'. Lua 5.1 would try to call the table instead.
+** CHANGE it to undefined as soon as your programs write 'pairs(t)'.
+*/
+#define LUA_COMPAT_TFORTABLE
+
+/*
 @@ LUA_COMPAT_LSTR controls compatibility with old long string nesting
 @* facility.
 ** CHANGE it to 2 if you want the old behaviour, or undefine it to turn

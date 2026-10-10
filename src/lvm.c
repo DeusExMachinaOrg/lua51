@@ -675,13 +675,32 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
       case OP_TFORLOOP: {
         StkId cb = ra + 3;  /* call base */
-        setobjs2s(L, cb+2, ra+2);
-        setobjs2s(L, cb+1, ra+1);
-        setobjs2s(L, cb, ra);
-        L->top = cb+3;  /* func. + 2 args (state and index) */
-        Protect(luaD_call(L, cb, GETARG_C(i)));
-        L->top = L->ci->top;
-        cb = RA(i) + 3;  /* previous call may change the stack */
+#if defined(LUA_COMPAT_TFORTABLE)
+        if (ttistable(ra)) {  /* Lua 5.0 'for k, v in t do': step t as next() would */
+          int nres = GETARG_C(i);
+          int more;
+          setobjs2s(L, cb, ra+2);  /* the key to continue from */
+          Protect(more = luaH_next(L, hvalue(ra), cb));  /* writes key and value */
+          cb = RA(i) + 3;
+          if (!more)
+            setnilvalue(cb);  /* end of the table ends the loop */
+          else {
+            int k;
+            for (k = 2; k < nres; k++)  /* loop variables past key, value */
+              setnilvalue(cb+k);
+          }
+        }
+        else
+#endif
+        {
+          setobjs2s(L, cb+2, ra+2);
+          setobjs2s(L, cb+1, ra+1);
+          setobjs2s(L, cb, ra);
+          L->top = cb+3;  /* func. + 2 args (state and index) */
+          Protect(luaD_call(L, cb, GETARG_C(i)));
+          L->top = L->ci->top;
+          cb = RA(i) + 3;  /* previous call may change the stack */
+        }
         if (!ttisnil(cb)) {  /* continue loop? */
           setobjs2s(L, cb-1, cb);  /* save control variable */
           dojump(L, pc, GETARG_sBx(*pc));  /* jump back */
